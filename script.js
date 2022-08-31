@@ -1,4 +1,4 @@
-var cv, ctx, blackground="white", speed=40, player_Direction="", bomb_Direction="right";
+var cv, ctx, blackground="white", speed=40, player_Direction="";
 var pause=false;
 var bomb_flag = false;
 //var pl = new Image();
@@ -21,7 +21,7 @@ function run(){
     walls = [];
     blocks = [];
     walls.unshift(new Wall(40,40,40,40));
-    blocks.unshift(new Block(80,0,40,40,true));
+    blocks.unshift(new Block(80,0,40,40,random()));
     //blocks.unshift(new Block(0,80,40,40,true));
     //Generate walls
     for (let index = 0; index < 8; index++) {
@@ -34,14 +34,22 @@ function run(){
         }
     }
     //Generate blocks
-    for (let index = 0; index < 24; index++) {
-        for (let index = 0; index < 24; index++) {
+    for (let index = 0; index < 19; index++) {
+        for (let index = 0; index < 19; index++) {
             if (blocks[0].x <= 680) {
                 blocks.unshift(new Block(blocks[0].x+40, blocks[0].y, 40, 40, random()));
             }else if(blocks[0].y == 0 && blocks[0].x > 680 ){
                 blocks.unshift(new Block(80, blocks[0].y+40, 40, 40, random()));
             }else{
                 blocks.unshift(new Block(0, blocks[0].y+40, 40, 40, random()));
+            }
+        }
+    }
+    //Validate blocks
+    for (let index = 0; index < walls.length; index++) {
+        for (let index2 = 0; index2 < blocks.length; index2++) {
+            if (walls[index].x == blocks[index2].x && walls[index].y == blocks[index2].y) {
+                blocks[index2].v = false;
             }
         }
     }
@@ -59,7 +67,7 @@ function paint(){
         walls[index].paint(ctx);
     }
     player1.paint(ctx);
-    bomb.paint(ctx, bomb_Direction, player1);
+    bomb.paint(ctx, player1);
     /*for (let index = 0; index < pared.length; index++) {
         ctx.drawImage(poste, pared[index].x, pared[index].y);
     }
@@ -124,16 +132,20 @@ document.addEventListener('keydown', (e)=>{
     //space bar
     if(e.keyCode == 32){
         if(bomb_flag && !bomb.v){
-            bomb.create_bomb(ctx, bomb_Direction, player1.x, player1.y);
+            bomb.create_bomb(ctx, player1.x, player1.y);
         }
         setTimeout(function(){
-            bomb.v=false;
-            bomb.delete_bomb(ctx);
             for (let index = 0; index < blocks.length; index++) {
-                if(bomb.collision(blocks[index]) && blocks[index].v == true){
-                   console.log("a");
+                if (blocks[index].v) { 
+                    bomb.collision(blocks[index]);
+                    if(bomb.collision(player1)){
+                        console.log("morido");
+                    };
                 }
             }
+            bomb.explosion(ctx);
+            bomb.v=false;
+            bomb.delete_bomb(ctx);
         }, 2000);
     }
     //pause
@@ -161,7 +173,7 @@ function Block(x, y, w, h, v){
             ctx.fillStyle=this.c;
             ctx.fillRect(this.x, this.y, this.w, this.h);
         }
-    }
+    };
 }
 function Wall(x, y, w, h){
     this.x = x;this.y = y;
@@ -173,7 +185,7 @@ function Wall(x, y, w, h){
         ctx.fillRect(this.x, this.y, this.w, this.h);
     }
 }
-function Bomb(x, y, v){
+function Bomb(x, y){
     this.x = x;this.y = y;
     this.w = 40;this.h = 40;
     this.c = "black";
@@ -183,20 +195,9 @@ function Bomb(x, y, v){
         ctx.fillStyle=this.c;
         ctx.fillRect(this.x, this.y, this.w, this.h);
     };
-    this.create_bomb = function(ctx, direction, x, y){
-        if (direction=="up") {
-            this.x = x;
-            this.y = y-40;
-        }else if(direction=="right"){
-            this.x = x+40;
-            this.y = y;
-        }else if(direction=="left"){
-            this.x = x-40;
-            this.y = y;
-        }else if(direction=="down"){
-            this.x = x;
-            this.y = y+40;
-        }
+    this.create_bomb = function(ctx, x, y){
+        this.x = x; this.y = y;
+        console.log(this.x + "-" + this.y);
         ctx.strokeRect(this.x, this.y, this.w, this.h);
         ctx.fillStyle=this.c;
         ctx.fillRect(this.x, this.y, this.w, this.h);
@@ -208,19 +209,43 @@ function Bomb(x, y, v){
         this.x = -80;
         this.y = -80;
     };
-    this.collision = function (target) { 
-        if(this.x < target.x + target.w){
-            
-        }if(this.x + this.w > target.x){
-
-        }if(this.y < target.y + target.h){
-
-        }if(this.y + this.h > target.y){
-            
+    this.collision = function(target) {
+        if ((this.x+40 == target.x && this.y == target.y)/*||
+            this.x+80 == target.x && this.y == target.y*/) {
+            //console.log("right");
+            target.v = false;
+            return true;
+        }else if((this.x-40 == target.x && this.y == target.y)/*||
+                this.x-80 == target.x && this.y == target.y*/){
+            //console.log("left");
+            target.v = false;
+            return true;
+        }else if((this.x == target.x && this.y+40 == target.y)/*||
+                this.x == target.x && this.y+80 == target.y*/){
+            //console.log("down");
+            target.v = false;
+            return true;
+        }else if((this.x == target.x && this.y-40 == target.y)/*||
+                this.x == target.x && this.y-80 == target.y*/){
+            //console.log("up");
+            target.v = false;
+            return true;
+        }else{
+            return false;
         }
-        return true;
     };
+    this.explosion = function(ctx){
+        console.log(this.x + "-" + this.y);
+        ctx.strokeRect(this.x-40, this.y, this.w+80, this.h);
+        ctx.fillStyle="green";
+        ctx.fillRect(this.x-40, this.y, this.w+80, this.h);
+        ctx.strokeStyle="black";
+        ctx.strokeRect(this.x, this.y-40, this.w, this.h+80);
+        ctx.fillStyle="orange";
+        ctx.fillRect(this.x, this.y, this.w, this.h);
+    }
 }
+
 function Player(x, y, w, h, c){
     this.x = x;this.y = y;
     this.w = w;this.h = h;
