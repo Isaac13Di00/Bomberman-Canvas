@@ -10,6 +10,7 @@ var wall_sprite = new Image();
 var block_sprite = new Image();
 var heart_sprite = new Image();
 var boom_sound = new Audio('sound/boom.mp3');
+var oof_sound = new Audio('sound/ouch.mp3');
 var environment_sound = new Audio('sound/background.mp3');
 //var pl = new Image();
 //Other functions
@@ -203,6 +204,7 @@ document.addEventListener('keydown', (e)=>{
                         }
                         if(bomb.collision(player1)){
                             boom_flag=true;
+                            oof_sound.play();
                         };
                     }
                 }
